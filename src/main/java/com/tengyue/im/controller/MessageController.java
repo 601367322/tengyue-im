@@ -2,9 +2,9 @@ package com.tengyue.im.controller;
 
 import com.tengyue.im.exception.MyException;
 import com.tengyue.im.model.MyResponseBody;
+import com.tengyue.im.socket.ClientManager;
 import com.tengyue.im.socket.MessageBundle;
 import com.tengyue.im.socket.SocketServer;
-import com.tengyue.im.socket.SocketSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,19 +33,17 @@ public class MessageController {
         System.out.println("消息：\t" + text);
 
         //得到对方的Session
-        SocketSession mSession = SocketServer.clients.get(toId);
-        if (mSession != null) {
-            //是否可用
-            if (mSession.getSelectionKey().isValid()) {
-                //将消息加入队列
-                MessageBundle bundle = SocketServer.getBundleFromSelectionKey(mSession.getSelectionKey());
-                bundle.enqueue(text);
+        SelectionKey selectionKey = ClientManager.getInstance().get(toId);
+        //是否可用
+        if (selectionKey != null && selectionKey.isValid()) {
+            //将消息加入队列
+            MessageBundle bundle = SocketServer.getBundleFromSelectionKey(selectionKey);
+            bundle.enqueue(text);
 
-                //变为可写状态
-                mSession.getSelectionKey().attach(bundle);
-                mSession.getSelectionKey().interestOps(SelectionKey.OP_WRITE);
-                mSession.getSelectionKey().selector().wakeup();
-            }
+            //变为可写状态
+            selectionKey.attach(bundle);
+            selectionKey.interestOps(SelectionKey.OP_WRITE);
+            selectionKey.selector().wakeup();
         } else {
             throw new MyException("对方不在线");
         }

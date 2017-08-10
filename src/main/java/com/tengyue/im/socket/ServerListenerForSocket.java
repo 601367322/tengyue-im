@@ -15,6 +15,7 @@ public class ServerListenerForSocket {
     public void init() {
         try {
             mServer = new SocketServer(PORT);
+            mServer.addHandler(new MyMessageHandler());
             mServer.start();
         } catch (Exception e) {
             e.printStackTrace();
@@ -23,9 +24,8 @@ public class ServerListenerForSocket {
 
     @PreDestroy
     public void destroy() {
-        if (mServer != null) {
-            mServer.setStart(false);
-        }
+        SocketServer.start = false;
+        mServer.destroy();
     }
 
 }
