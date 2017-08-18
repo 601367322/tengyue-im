@@ -1,5 +1,6 @@
 package com.tengyue.im.socket;
 
+import com.tengyue.im.socket.handler.MyMessageHandler;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;

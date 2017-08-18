@@ -1,5 +1,7 @@
 package com.tengyue.im.socket;
 
+import com.tengyue.im.socket.handler.IHandler;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -82,14 +84,6 @@ public class SocketServer extends Thread {
             // 注册到selector，等待连接
             mLoopGroup.register(client, SelectionKey.OP_READ);
         }
-    }
-
-    public static MessageBundle getBundleFromSelectionKey(SelectionKey key) {
-        MessageBundle bundle = (MessageBundle) key.attachment();
-        if (bundle == null) {
-            bundle = new MessageBundle();
-        }
-        return bundle;
     }
 
     public void addHandler(IHandler handler) {

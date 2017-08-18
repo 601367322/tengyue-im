@@ -1,5 +1,7 @@
 package com.tengyue.im.socket;
 
+import com.tengyue.im.socket.handler.IHandler;
+
 import java.nio.channels.SelectableChannel;
 import java.util.ArrayList;
 import java.util.List;

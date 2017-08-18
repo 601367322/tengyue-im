@@ -11,12 +11,14 @@ public class SocketMessage implements Serializable{
     String text;
     String fromId;
     String toId;
+    String platform = "";
 
-    public SocketMessage(String cmd, String text, String fromId, String toId) {
+    public SocketMessage(String cmd, String text, String fromId, String toId, String platform) {
         this.cmd = cmd;
         this.text = text;
         this.fromId = fromId;
         this.toId = toId;
+        this.platform = platform;
     }
 
     public SocketMessage() {
@@ -52,5 +54,13 @@ public class SocketMessage implements Serializable{
 
     public void setToId(String toId) {
         this.toId = toId;
+    }
+
+    public String getPlatform() {
+        return platform;
+    }
+
+    public void setPlatform(String platform) {
+        this.platform = platform;
     }
 }
