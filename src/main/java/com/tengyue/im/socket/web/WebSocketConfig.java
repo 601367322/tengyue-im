@@ -20,7 +20,8 @@ public class WebSocketConfig extends WebMvcConfigurerAdapter implements WebSocke
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
 
         //WebIM WebSocket通道
-        registry.addHandler(chatWebSocketHandler(),"/ws").addInterceptors(myInterceptor());
+        registry
+                .addHandler(chatWebSocketHandler(),"/ws");
     }
 
     @Bean
@@ -28,8 +29,4 @@ public class WebSocketConfig extends WebMvcConfigurerAdapter implements WebSocke
         return new ChatWebSocketHandler();
     }
 
-    @Bean
-    public WebSocketHandshakeInterceptor myInterceptor() {
-        return new WebSocketHandshakeInterceptor();
-    }
 }

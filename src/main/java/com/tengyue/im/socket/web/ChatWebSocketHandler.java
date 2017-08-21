@@ -12,17 +12,23 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     IHandler handler = new MyMessageHandler();
 
-    //接收文本消息，并发送出去
+
+    /**
+     * 链接完成之后
+     * @param session
+     * @throws Exception
+     */
+    @Override
+    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        //可以处理离线消息
+    }
+
+    //接收文本消息
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         super.handleTextMessage(session, message);
 
         handler.messageReceived(session, message.getPayload());
-    }
-
-    @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        //处理离线消息
     }
 
     //抛出异常时处理

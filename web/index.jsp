@@ -63,7 +63,7 @@
 <body>
 <div>
     <div>用户ID：<input id="userId" type="text"/></div>
-    <div>服务器地址：<input id="address" type="text" style="width:200px" value="ws://localhost:8082/ws"/></div>
+    <div>服务器地址：<input id="address" type="text" style="width:200px" value="ws://localhost:8083/"/></div>
     <a href="javascript:WebSocketTest()">连接</a>
     <div>对方的用户ID：<input type="text" id="otherUserId"/></div>
     <div>输入消息内容：<input type="text" value="Hello world!" id="message"/></div>
