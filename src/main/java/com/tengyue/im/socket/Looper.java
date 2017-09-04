@@ -8,10 +8,10 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Queue;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -109,59 +109,51 @@ public class Looper implements Runnable {
 
                 System.out.println("receiveText:\t" + receiveText.trim());
 
-//                if (!receiveText.startsWith("{")) {
-//                    if (receiveText.contains("Sec-WebSocket-Key")) {
-//                        String[] strs = receiveText.split("\r\n");
-//
-//                        for (int i = 0; i < strs.length; i++) {
-//                            String key = strs[i];
-//                            if (key.contains("Sec-WebSocket-Key")) {
-//                                try {
-//                                    //握手
-//                                    //通过字符串截取获取key值
-//                                    key = key.substring(0, key.indexOf("==") + 2);
-//                                    key = key.substring(key.indexOf("Key") + 4, key.length()).trim();
-//                                    //拼接WEBSOCKET传输协议的安全校验字符串
-//                                    key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-//                                    //通过SHA-1算法进行更新
-//                                    MessageDigest md = MessageDigest.getInstance("SHA-1");
-//                                    md.update(key.getBytes("utf-8"), 0, key.length());
-//                                    byte[] sha1Hash = md.digest();
-//                                    //进行Base64加密
-//                                    sun.misc.BASE64Encoder encoder = new sun.misc.BASE64Encoder();
-//                                    key = encoder.encode(sha1Hash);
-//
-//                                    StringBuilder builder = new StringBuilder();
-//
-//                                    //服务器端返回输出内容
-//                                    builder.append("HTTP/1.1 101 Switching Protocols\r\n");
-//                                    builder.append("Upgrade: websocket\r\n");
-//                                    builder.append("Connection: Upgrade\r\n");
-//                                    builder.append("Sec-WebSocket-Accept: " + key + "\r\n\r\n");
-//
-//                                    MessageBundle bundle = getBundleFromSelectionKey(selectionKey);
-//                                    bundle.enqueue(builder.toString());
-//                                    selectionKey.attach(bundle);
-//                                    selectionKey.interestOps(SelectionKey.OP_WRITE);
-//                                } catch (NoSuchAlgorithmException e) {
-//                                    e.printStackTrace();
-//                                }
-//                            }
-//                        }
-//                        return;
-//                    }else{
-//                        byte[] bytes = WSP13Encode("hello");
-//                        ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length);
-//                        byteBuffer.put(bytes);
-//                        client.write(byteBuffer);
-//                        byteBuffer.flip();
-//                    }
-//                }else {
+                if (receiveText.startsWith("GET / HTTP/1.1")) {
+                    if (receiveText.contains("Sec-WebSocket-Key")) {
+                        String[] strs = receiveText.split("\r\n");
 
-                for (int i = 0; i < mHandlers.size(); i++) {
-                    mHandlers.get(i).messageReceived(selectionKey, receiveText);
+                        for (int i = 0; i < strs.length; i++) {
+                            String key = strs[i];
+                            if (key.contains("Sec-WebSocket-Key")) {
+                                try {
+                                    //握手
+                                    //通过字符串截取获取key值
+                                    key = key.substring(0, key.indexOf("==") + 2);
+                                    key = key.substring(key.indexOf("Key") + 4, key.length()).trim();
+                                    //拼接WEBSOCKET传输协议的安全校验字符串
+                                    key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+                                    //通过SHA-1算法进行更新
+                                    MessageDigest md = MessageDigest.getInstance("SHA-1");
+                                    md.update(key.getBytes("utf-8"), 0, key.length());
+                                    byte[] sha1Hash = md.digest();
+                                    //进行Base64加密
+                                    sun.misc.BASE64Encoder encoder = new sun.misc.BASE64Encoder();
+                                    key = encoder.encode(sha1Hash);
+
+                                    StringBuilder builder = new StringBuilder();
+
+                                    //服务器端返回输出内容
+                                    builder.append("HTTP/1.1 101 Web Socket Protocol Handshake\r\n");
+                                    builder.append("Connection: Upgrade\r\n");
+                                    builder.append("Date: "+getServerTime()+"\r\n");
+                                    builder.append("Sec-WebSocket-Accept: " + key + "\r\n");
+                                    builder.append("Server: TooTallNate Java-WebSocket\r\n");
+                                    builder.append("Upgrade: websocket\r\n\r\n");
+
+                                    new SocketClient(selectionKey).write(builder.toString());
+                                } catch (NoSuchAlgorithmException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                        return;
+                    }
+                } else {
+                    for (int i = 0; i < mHandlers.size(); i++) {
+                        mHandlers.get(i).messageReceived(selectionKey, receiveText);
+                    }
                 }
-//                }
             } else if (count == -1) {
                 ClientManager.getInstance().disconnect(selectionKey);
             }
@@ -182,31 +174,18 @@ public class Looper implements Runnable {
 
                 if (!bundle.isEmpty()) {
 
-                    byte[] msg = bundle.getFirst().getBytes();
+                    byte[] msg;
+                    ByteBuffer sendBuffer;
 
-                    ByteBuffer sendBuffer = ByteBuffer.wrap(msg);
+                    if (bundle.getFirst().startsWith("HTTP/1.1")) {
+                        msg = bundle.getFirst().getBytes();
+                        sendBuffer = ByteBuffer.wrap(msg);
+                    } else {
+                        sendBuffer = createBinaryFrame(ByteBuffer.wrap(bundle.getFirst().getBytes()));
+                    }
 
                     try {
 
-//                        SocketSession session = ClientManager.getInstance().get(selectionKey);
-//
-//                        if (session != null && session.isWebSocket()) {
-//
-//                            byte[] b = WSP13Encode("hello\n\r\n\n\n\n");
-//                            ByteBuffer sen = ByteBuffer.allocate(b.length);
-//                            sen.put(b);
-//
-//                            int len = client.write(sen);
-//                            client.write(sen);
-//
-//                            sen.flip();
-//
-//                            if (len == -1) {
-//                                //失败或异常，断开连接
-//                                ClientManager.getInstance().disconnect(selectionKey);
-//                                return;
-//                            }
-//                        } else {
                         //发送消息
                         int len = client.write(sendBuffer);
 
@@ -217,7 +196,7 @@ public class Looper implements Runnable {
                             ClientManager.getInstance().disconnect(selectionKey);
                             return;
                         }
-//                        }
+
                         bundle.removeFirst();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -238,55 +217,63 @@ public class Looper implements Runnable {
 
     }
 
+    private String getServerTime() {
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat dateFormat = new SimpleDateFormat(
+                "EEE, dd MMM yyyy HH:mm:ss z", Locale.US );
+        dateFormat.setTimeZone( TimeZone.getTimeZone( "GMT" ) );
+        return dateFormat.format( calendar.getTime() );
+    }
 
-    /*public byte[] WSP13Encode(String mess) throws IOException {
-        byte[] rawData = mess.getBytes();
+    public ByteBuffer createBinaryFrame( ByteBuffer framedata ) {
+        ByteBuffer mes = framedata;
+        boolean mask = false; // framedata.getTransfereMasked();
+        int sizebytes = mes.remaining() <= 125 ? 1 : mes.remaining() <= 65535 ? 2 : 8;
+        ByteBuffer buf = ByteBuffer.allocate( 1 + ( sizebytes > 1 ? sizebytes + 1 : sizebytes ) + ( mask ? 4 : 0 ) + mes.remaining() );
+        byte optcode = 1;
+        byte one = ( byte ) (-128);
+        one |= optcode;
+        buf.put( one );
+        byte[] payloadlengthbytes = toByteArray( mes.remaining(), sizebytes );
+        assert ( payloadlengthbytes.length == sizebytes );
 
-        int frameCount = 0;
-        byte[] frame = new byte[10];
+        if( sizebytes == 1 ) {
+            buf.put( ( byte ) ( payloadlengthbytes[0] | ( mask ? ( byte ) -128 : 0 ) ) );
+        } else if( sizebytes == 2 ) {
+            buf.put( ( byte ) ( ( byte ) 126 | ( mask ? ( byte ) -128 : 0 ) ) );
+            buf.put( payloadlengthbytes );
+        } else if( sizebytes == 8 ) {
+            buf.put( ( byte ) ( ( byte ) 127 | ( mask ? ( byte ) -128 : 0 ) ) );
+            buf.put( payloadlengthbytes );
+        } else
+            throw new RuntimeException( "Size representation not supported/specified" );
 
-        frame[0] = (byte) 129;
+        if( mask ) {
+            ByteBuffer maskkey = ByteBuffer.allocate( 4 );
+            maskkey.putInt( 1 );
+            buf.put( maskkey.array() );
+            for( int i = 0; mes.hasRemaining(); i++ ) {
+                buf.put( ( byte ) ( mes.get() ^ maskkey.get( i % 4 ) ) );
+            }
+        } else
+            buf.put( mes );
+        // translateFrame ( buf.array () , buf.array ().length );
+        assert ( buf.remaining() == 0 ) : buf.remaining();
+        buf.flip();
 
-        if (rawData.length <= 125) {
-            frame[1] = (byte) rawData.length;
-            frameCount = 2;
-        } else if (rawData.length >= 126 && rawData.length <= 65535) {
-            frame[1] = (byte) 126;
-            int len = rawData.length;
-            frame[2] = (byte) ((len >> 8) & (byte) 255);
-            frame[3] = (byte) (len & (byte) 255);
-            frameCount = 4;
-        } else {
-            frame[1] = (byte) 127;
-            int len = rawData.length;
-            frame[2] = (byte) ((len >> 56) & (byte) 255);
-            frame[3] = (byte) ((len >> 48) & (byte) 255);
-            frame[4] = (byte) ((len >> 40) & (byte) 255);
-            frame[5] = (byte) ((len >> 32) & (byte) 255);
-            frame[6] = (byte) ((len >> 24) & (byte) 255);
-            frame[7] = (byte) ((len >> 16) & (byte) 255);
-            frame[8] = (byte) ((len >> 8) & (byte) 255);
-            frame[9] = (byte) (len & (byte) 255);
-            frameCount = 10;
+        return buf;
+    }
+
+
+
+    private byte[] toByteArray(long val, int bytecount) {
+        byte[] buffer = new byte[bytecount];
+        int highest = 8 * bytecount - 8;
+        for (int i = 0; i < bytecount; i++) {
+            buffer[i] = (byte) (val >>> (highest - 8 * i));
         }
-
-        int bLength = frameCount + rawData.length;
-
-        byte[] reply = new byte[bLength];
-
-        int bLim = 0;
-        for (int i = 0; i < frameCount; i++) {
-            reply[bLim] = frame[i];
-            bLim++;
-        }
-        for (int i = 0; i < rawData.length; i++) {
-            reply[bLim] = rawData[i];
-            bLim++;
-        }
-
-        return reply;
-
-    }*/
+        return buffer;
+    }
 
     public static String WSP13Decode(byte[] data) {
         byte _firstByte = data[0];

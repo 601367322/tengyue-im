@@ -54,7 +54,7 @@ public class SocketClient implements ISocketClient {
         ArrayList<String> messageQueue = new ArrayList<>();
 
         public void enqueue(String str) {
-            messageQueue.add(str + "\n");
+            messageQueue.add(str);
         }
 
         public String getFirst() {

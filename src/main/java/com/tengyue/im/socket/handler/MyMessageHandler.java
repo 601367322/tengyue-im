@@ -1,12 +1,11 @@
 package com.tengyue.im.socket.handler;
 
 import com.tengyue.im.model.SocketMessage;
-import com.tengyue.im.util.StaticUtil;
 import com.tengyue.im.socket.client.ClientManager;
 import com.tengyue.im.socket.client.ISocketClient;
 import com.tengyue.im.socket.client.SocketClient;
-import com.tengyue.im.socket.client.WebSocketClient;
 import com.tengyue.im.util.MyJSONUtil;
+import com.tengyue.im.util.StaticUtil;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.nio.channels.SelectionKey;
@@ -41,7 +40,7 @@ public class MyMessageHandler implements IHandler {
 
     ISocketClient generateClient(Object session) {
         if (session instanceof WebSocketSession) {
-            return new WebSocketClient((WebSocketSession) session);
+            return null;
         } else {
             return new SocketClient((SelectionKey) session);
         }

@@ -5,6 +5,7 @@ import com.tengyue.im.socket.handler.IHandler;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -81,6 +82,10 @@ public class SocketServer extends Thread {
             SocketChannel client = server.accept();
             // 配置为非阻塞
             client.configureBlocking(false);
+            Socket socket = client.socket();
+            socket.setTcpNoDelay(false);
+            socket.setKeepAlive(true);
+
             // 注册到selector，等待连接
             mLoopGroup.register(client, SelectionKey.OP_READ);
         }
